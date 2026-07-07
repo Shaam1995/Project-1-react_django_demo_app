@@ -1,0 +1,44 @@
+    agent any
+
+    environment {
+        IMAGE_NAME = "react_django_demo_app"
+        EC2_HOST = "172.31.39.79"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Shaam1995/react_django_demo_app.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+
+        stage('Upload Build Log to S3') {
+            steps {
+                sh 'docker images > build-log.txt'
+                sh 'aws s3 cp build-log.txt s3://basic-project-build-logs'
+'
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                sh '''
+                    docker save $IMAGE_NAME | gzip > app.tar.gz
+                    scp -i /var/lib/jenkins/python.pem app.tar.gz ubuntu@172.31.39.79:/home/ubuntu/
+                    ssh -i /var/lib/jenkins/python.pem ubuntu@172.31.39.79 '
+                        docker load < app.tar.gz &&
+                        docker stop basic-app || true &&
+                        docker rm basic-app || true &&
+                        docker run -d --name basic-app -p 80:80 basic-jenkins-app
+                    '
+                '''
+            }
+        }
+    }
+}
