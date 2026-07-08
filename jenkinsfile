@@ -3,6 +3,7 @@
     environment {
         IMAGE_NAME = "react_django_demo_app"
         EC2_HOST = "172.31.39.79"
+        SSH_KEY = "/var/lib/jenkins/python.pem"
     }
 
     stages {
@@ -35,10 +36,12 @@
                         docker load < app.tar.gz &&
                         docker stop basic-app || true &&
                         docker rm basic-app || true &&
-                        docker run -d --name basic-app -p 80:80 basic-jenkins-app
+                        docker run -d --name basic-app -p 80:8000 basic-jenkins-app
                     '
                 '''
             }
         }
     }
 }
+
+
